@@ -1,16 +1,17 @@
 import tensorflow as tf
+from hparams import HParams
 from text import symbols
 
 
 def create_hparams(hparams_string=None, verbose=False):
     """Create model hyperparameters. Parse nondefault from given string."""
 
-    hparams = tf.contrib.training.HParams(
+    hparams = HParams(
         ################################
         # Experiment Parameters        #
         ################################
         epochs=500,
-        iters_per_checkpoint=1000,
+        iters_per_checkpoint=100,
         seed=1234,
         dynamic_loss_scaling=True,
         fp16_run=False,
@@ -19,14 +20,13 @@ def create_hparams(hparams_string=None, verbose=False):
         dist_url="tcp://localhost:54321",
         cudnn_enabled=True,
         cudnn_benchmark=False,
-        ignore_layers=['embedding.weight'],
+        ignore_layers=['embedding.weight', 'decoder.linear_projection.linear_layer.weight'],
 
         ################################
         # Data Parameters             #
         ################################
-        load_mel_from_disk=False,
-        training_files='filelists/ljs_audio_text_train_filelist.txt',
-        validation_files='filelists/ljs_audio_text_val_filelist.txt',
+        training_files='filelists/train.txt',
+        validation_files='filelists/val.txt',
         text_cleaners=['english_cleaners'],
 
         ################################
@@ -53,10 +53,10 @@ def create_hparams(hparams_string=None, verbose=False):
         encoder_embedding_dim=512,
 
         # Decoder parameters
-        n_frames_per_step=1,  # currently only 1 is supported
+        n_frames_per_step=1,
         decoder_rnn_dim=1024,
         prenet_dim=256,
-        max_decoder_steps=1000,
+        max_decoder_steps=2000,
         gate_threshold=0.5,
         p_attention_dropout=0.1,
         p_decoder_dropout=0.1,
@@ -81,8 +81,8 @@ def create_hparams(hparams_string=None, verbose=False):
         learning_rate=1e-3,
         weight_decay=1e-6,
         grad_clip_thresh=1.0,
-        batch_size=64,
-        mask_padding=True  # set model's padded outputs to padded values
+        batch_size=9,
+        mask_padding=False  # set model's padded outputs to padded values
     )
 
     if hparams_string:
