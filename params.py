@@ -1,6 +1,5 @@
 import tensorflow as tf
 from hparams import HParams
-from text import symbols
 
 
 def create_hparams(hparams_string=None, verbose=False):
@@ -20,14 +19,13 @@ def create_hparams(hparams_string=None, verbose=False):
         dist_url="tcp://localhost:54321",
         cudnn_enabled=True,
         cudnn_benchmark=False,
-        ignore_layers=['embedding.weight', 'decoder.linear_projection.linear_layer.weight'],
+        ignore_layers=[],
 
         ################################
         # Data Parameters             #
         ################################
         training_files='filelists/train.txt',
         validation_files='filelists/val.txt',
-        text_cleaners=['english_cleaners'],
 
         ################################
         # Audio Parameters             #
@@ -44,7 +42,8 @@ def create_hparams(hparams_string=None, verbose=False):
         ################################
         # Model Parameters             #
         ################################
-        n_symbols=len(symbols),
+        n_symbols=148,
+        table_file="table.txt",
         symbols_embedding_dim=512,
 
         # Encoder parameters

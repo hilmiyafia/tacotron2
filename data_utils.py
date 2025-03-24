@@ -4,10 +4,10 @@ import torch
 import torch.utils.data
 import librosa
 import tqdm
+import re
 
 import layers
 from utils import load_filepaths_and_text
-from text import text_to_sequence
 
 
 class TextMelLoader(torch.utils.data.Dataset):
@@ -31,6 +31,10 @@ class TextMelLoader(torch.utils.data.Dataset):
         print("Generating mels")
         for audiopath, _ in tqdm.tqdm(self.audiopaths_and_text):
             self.create_mel(audiopath)
+        self.symbols = list('_-!\'(),.:;? ')
+        with open(hparams["table_file"]) as file:
+            self.symbols += [line.strip().split("\t")[1] for line in file]
+        self.curly_re = re.compile(r'(.*?)\{(.+?)\}(.*)')
 
     def get_mel_text_pair(self, audiopath_and_text):
         # separate filename and text
@@ -55,8 +59,21 @@ class TextMelLoader(torch.utils.data.Dataset):
         return melspec
 
     def get_text(self, text):
-        text_norm = torch.IntTensor(text_to_sequence(text, self.text_cleaners))
+        text_norm = torch.IntTensor(self.text_to_sequence(text, self.text_cleaners))
         return text_norm
+    
+    """ from https://github.com/keithito/tacotron """
+    def text_to_sequence(self, text):
+        sequence = []
+        while len(text):
+            m = self.curly_re.match(text)
+            if not m:
+                sequence += list(text)
+                break
+            sequence += list(m.group(1))
+            sequence += [f"@{s}" for s in m.group(2).split()]
+            text = m.group(3)
+        return [self.symbols.index(s) for s in sequence]
 
     def __getitem__(self, index):
         return self.get_mel_text_pair(self.audiopaths_and_text[index])
