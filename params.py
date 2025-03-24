@@ -1,4 +1,3 @@
-import tensorflow as tf
 from hparams import HParams
 
 
@@ -77,7 +76,7 @@ def create_hparams(hparams_string=None, verbose=False):
         # Optimization Hyperparameters #
         ################################
         use_saved_learning_rate=False,
-        learning_rate=1e-3,
+        learning_rate=1e-4,
         weight_decay=1e-6,
         grad_clip_thresh=1.0,
         batch_size=9,
@@ -85,10 +84,10 @@ def create_hparams(hparams_string=None, verbose=False):
     )
 
     if hparams_string:
-        tf.logging.info('Parsing command line hparams: %s', hparams_string)
+        print('Parsing command line hparams:', hparams_string)
         hparams.parse(hparams_string)
 
     if verbose:
-        tf.logging.info('Final parsed hparams: %s', hparams.values())
+        print('Final parsed hparams:', hparams.values())
 
     return hparams
