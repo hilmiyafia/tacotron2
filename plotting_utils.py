@@ -6,8 +6,9 @@ import numpy as np
 
 def save_figure_to_numpy(fig):
     # save it to a numpy array.
-    data = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
-    data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+    fig.canvas.draw()
+    data = np.fromstring(fig.canvas.tostring_argb(), dtype=np.uint8, sep='')
+    data = data.reshape(fig.canvas.get_width_height()[::-1] + (4,))[:, :, 1:]
     return data
 
 
