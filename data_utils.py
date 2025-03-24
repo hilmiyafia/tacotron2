@@ -2,9 +2,11 @@ import random
 import numpy as np
 import torch
 import torch.utils.data
+import librosa
+import tqdm
 
 import layers
-from utils import load_wav_to_torch, load_filepaths_and_text
+from utils import load_filepaths_and_text
 from text import text_to_sequence
 
 
@@ -26,6 +28,9 @@ class TextMelLoader(torch.utils.data.Dataset):
             hparams["mel_fmax"])
         random.seed(hparams["seed"])
         random.shuffle(self.audiopaths_and_text)
+        print("Generating mels")
+        for audiopath, _ in tqdm.tqdm(self.audiopaths_and_text):
+            self.create_mel(audiopath)
 
     def get_mel_text_pair(self, audiopath_and_text):
         # separate filename and text
@@ -33,23 +38,19 @@ class TextMelLoader(torch.utils.data.Dataset):
         text = self.get_text(text)
         mel = self.get_mel(audiopath)
         return (text, mel)
+    
+    def create_mel(self, filename):
+        audio, _ = librosa.load(filename, sr=self.sampling_rate)
+        audio_norm = torch.FloatTensor(audio).unsqueeze(0)
+        audio_norm = torch.autograd.Variable(audio_norm, requires_grad=False)
+        melspec = self.stft.mel_spectrogram(audio_norm)
+        melspec = torch.squeeze(melspec, 0)
+        np.save(filename + ".npy", melspec.numpy())
 
     def get_mel(self, filename):
-        if not self.load_mel_from_disk:
-            audio, sampling_rate = load_wav_to_torch(filename)
-            if sampling_rate != self.stft.sampling_rate:
-                raise ValueError("{} {} SR doesn't match target {} SR".format(
-                    sampling_rate, self.stft.sampling_rate))
-            audio_norm = audio / self.max_wav_value
-            audio_norm = audio_norm.unsqueeze(0)
-            audio_norm = torch.autograd.Variable(audio_norm, requires_grad=False)
-            melspec = self.stft.mel_spectrogram(audio_norm)
-            melspec = torch.squeeze(melspec, 0)
-        else:
-            melspec = torch.from_numpy(np.load(filename))
-            assert melspec.size(0) == self.stft.n_mel_channels, (
-                'Mel dimension mismatch: given {}, expected {}'.format(
-                    melspec.size(0), self.stft.n_mel_channels))
+        melspec = torch.from_numpy(np.load(filename + ".npy"))
+        assert melspec.size(0) == self.stft.n_mel_channels, (
+            f'Mel dimension mismatch: given {melspec.size(0)}, expected {self.stft.n_mel_channels}')
 
         return melspec
 
