@@ -301,7 +301,7 @@ class Decoder(nn.Module):
         """
         # (B, n_mel_channels, T_out) -> (B, T_out, n_mel_channels)
         decoder_inputs = decoder_inputs.transpose(1, 2)
-        decoder_inputs = decoder_inputs.view(
+        decoder_inputs = decoder_inputs.reshape(
             decoder_inputs.size(0),
             int(decoder_inputs.size(1)/self.n_frames_per_step), -1)
         # (B, T_out, n_mel_channels) -> (T_out, B, n_mel_channels)
@@ -325,12 +325,11 @@ class Decoder(nn.Module):
         # (T_out, B) -> (B, T_out)
         alignments = torch.stack(alignments).transpose(0, 1)
         # (T_out, B) -> (B, T_out)
-        gate_outputs = torch.stack(gate_outputs).transpose(0, 1)
-        gate_outputs = gate_outputs.contiguous()
+        gate_outputs = torch.concat(gate_outputs, 1).contiguous()
         # (T_out, B, n_mel_channels) -> (B, T_out, n_mel_channels)
         mel_outputs = torch.stack(mel_outputs).transpose(0, 1).contiguous()
         # decouple frames per step
-        mel_outputs = mel_outputs.view(
+        mel_outputs = mel_outputs.reshape(
             mel_outputs.size(0), -1, self.n_mel_channels)
         # (B, T_out, n_mel_channels) -> (B, n_mel_channels, T_out)
         mel_outputs = mel_outputs.transpose(1, 2)
@@ -407,7 +406,7 @@ class Decoder(nn.Module):
             mel_output, gate_output, attention_weights = self.decode(
                 decoder_input)
             mel_outputs += [mel_output.squeeze(1)]
-            gate_outputs += [gate_output.squeeze(1)]
+            gate_outputs += [gate_output]
             alignments += [attention_weights]
 
         mel_outputs, gate_outputs, alignments = self.parse_decoder_outputs(
