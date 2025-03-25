@@ -171,7 +171,7 @@ def train(output_directory, log_directory, checkpoint_path, warm_start, n_gpus,
 
     model = load_model(hparams)
     learning_rate = hparams["learning_rate"]
-    optimizer = torch.optim.Adam(model.parameters(), learning_rate,
+    optimizer = torch.optim.AdamW(model.parameters(), learning_rate, [0.5, 0.9],
                                  weight_decay=hparams["weight_decay"])
 
     if hparams["fp16_run"]:
