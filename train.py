@@ -175,9 +175,7 @@ def train(output_directory, log_directory, checkpoint_path, warm_start, n_gpus,
                                  weight_decay=hparams["weight_decay"])
 
     if hparams["fp16_run"]:
-        from apex import amp
-        model, optimizer = amp.initialize(
-            model, optimizer, opt_level='O2')
+        scaler = torch.GradScaler()
 
     if hparams["distributed_run"]:
         model = apply_gradient_allreduce(model)
@@ -215,29 +213,35 @@ def train(output_directory, log_directory, checkpoint_path, warm_start, n_gpus,
                 param_group['lr'] = learning_rate
 
             model.zero_grad()
-            x, y = model.parse_batch(batch)
-            y_pred = model(x)
 
-            loss = criterion(y_pred, y)
+            if hparams["fp16_run"]:
+                with torch.autocast("cuda", torch.float16):
+                    x, y = model.parse_batch(batch)
+                    y_pred = model(x)
+                    loss = criterion(y_pred, y)
+            else:
+                x, y = model.parse_batch(batch)
+                y_pred = model(x)
+                loss = criterion(y_pred, y)
+    
             if hparams["distributed_run"]:
                 reduced_loss = reduce_tensor(loss.data, n_gpus).item()
             else:
                 reduced_loss = loss.item()
+
             if hparams["fp16_run"]:
-                with amp.scale_loss(loss, optimizer) as scaled_loss:
-                    scaled_loss.backward()
+                scaler.scale(loss).backward()
             else:
                 loss.backward()
 
-            if hparams["fp16_run"]:
-                grad_norm = torch.nn.utils.clip_grad_norm_(
-                    amp.master_params(optimizer), hparams["grad_clip_thresh"])
-                is_overflow = math.isnan(grad_norm)
-            else:
-                grad_norm = torch.nn.utils.clip_grad_norm_(
-                    model.parameters(), hparams["grad_clip_thresh"])
+            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), hparams["grad_clip_thresh"])
+            is_overflow = math.isnan(grad_norm)
 
-            optimizer.step()
+            if hparams["fp16_run"]:
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                optimizer.step()
 
             if not is_overflow and rank == 0:
                 duration = time.perf_counter() - start
