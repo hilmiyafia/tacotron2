@@ -29,7 +29,7 @@ def create_hparams(hparams_string=None, verbose=False):
         ################################
         # Audio Parameters             #
         ################################
-        max_wav_value=32768.0, # do not change
+        max_wav_value=32768.0, # do not change, these have to match the vocoder
         sampling_rate=22050, # do not change
         filter_length=1024, # do not change
         hop_length=256, # do not change

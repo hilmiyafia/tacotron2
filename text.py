@@ -4,6 +4,7 @@ curly_re = re.compile(r'(.*?)\{(.+?)\}(.*)')
 
 """ from https://github.com/keithito/tacotron """
 def text_to_sequence(text, symbols):
+    total = list('_-!\'(),.:;? ') + symbols
     sequence = []
     while len(text):
         m = curly_re.match(text)
@@ -13,4 +14,5 @@ def text_to_sequence(text, symbols):
         sequence += list(m.group(1))
         sequence += [f"@{s}" for s in m.group(2).split()]
         text = m.group(3)
-    return [symbols.index(s) for s in sequence + [";"]]
+    sequence += ["_"]
+    return [total.index(s) for s in sequence]

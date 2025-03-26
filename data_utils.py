@@ -29,9 +29,8 @@ class TextMelLoader(torch.utils.data.Dataset):
         print("Generating mels")
         for audiopath, _ in tqdm.tqdm(self.audiopaths_and_text):
             self.create_mel(audiopath)
-        self.symbols = list('_-!\'(),.:;? ')
         with open(hparams["table_file"]) as file:
-            self.symbols += [line.strip().split("\t")[1] for line in file]
+            self.symbols = [line.strip().split("\t")[1] for line in file]
 
     def get_mel_text_pair(self, audiopath_and_text):
         # separate filename and text
